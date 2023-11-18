@@ -11,20 +11,44 @@ auto TrieStore::Get(std::string_view key) -> std::optional<ValueGuard<T>> {
   // (2) Lookup the value in the trie.
   // (3) If the value is found, return a ValueGuard object that holds a reference to the value and the
   //     root. Otherwise, return std::nullopt.
-  throw NotImplementedException("TrieStore::Get is not implemented.");
+
+  Trie cur_trie;
+  {
+    std::lock_guard<std::mutex> lock(root_lock_);
+    cur_trie = root_; //获取以当前根节点为根节点的trie树,多线程情况不能使用指针，因为其他线程会改变当前root值。
+  }
+  auto value  = cur_trie.Get<T>(key);
+  if(!value)
+  {
+    return std::nullopt;
+  }
+  return ValueGuard<T>(cur_trie, *value);
+
 }
 
 template <class T>
 void TrieStore::Put(std::string_view key, T value) {
   // You will need to ensure there is only one writer at a time. Think of how you can achieve this.
   // The logic should be somehow similar to `TrieStore::Get`.
-  throw NotImplementedException("TrieStore::Put is not implemented.");
+  write_lock_.lock();
+  auto tree = root_.Put<T>(key, std::move(value));
+  root_lock_.lock();
+  root_ = tree;  // copy constructor is not guranteed to be ATOMIC!
+  root_lock_.unlock();
+  write_lock_.unlock();
+
+  
 }
 
 void TrieStore::Remove(std::string_view key) {
   // You will need to ensure there is only one writer at a time. Think of how you can achieve this.
   // The logic should be somehow similar to `TrieStore::Get`.
-  throw NotImplementedException("TrieStore::Remove is not implemented.");
+  write_lock_.lock();
+  auto tree = root_.Remove(key);
+  root_lock_.lock();
+  root_ = tree;
+  root_lock_.unlock();
+  write_lock_.unlock();
 }
 
 // Below are explicit instantiation of template functions.

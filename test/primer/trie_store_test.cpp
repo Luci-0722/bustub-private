@@ -18,7 +18,7 @@ using Integer = std::unique_ptr<uint32_t>;
 
 TEST(TrieStoreTest, BasicTest) {
   auto store = TrieStore();
-  ASSERT_EQ(store.Get<uint32_t>("233"), std::nullopt);
+  ASSERT_EQ(store.Get<uint32_t>("233"), std::nullopt); 
   store.Put<uint32_t>("233", 2333);
   {
     auto guard = store.Get<uint32_t>("233");
