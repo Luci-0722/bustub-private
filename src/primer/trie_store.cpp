@@ -15,15 +15,13 @@ auto TrieStore::Get(std::string_view key) -> std::optional<ValueGuard<T>> {
   Trie cur_trie;
   {
     std::lock_guard<std::mutex> lock(root_lock_);
-    cur_trie = root_; //获取以当前根节点为根节点的trie树,多线程情况不能使用指针，因为其他线程会改变当前root值。
+    cur_trie = root_;  //获取以当前根节点为根节点的trie树,多线程情况不能使用指针，因为其他线程会改变当前root值。
   }
-  auto value  = cur_trie.Get<T>(key);
-  if(!value)
-  {
+  auto value = cur_trie.Get<T>(key);
+  if (!value) {
     return std::nullopt;
   }
   return ValueGuard<T>(cur_trie, *value);
-
 }
 
 template <class T>
@@ -36,8 +34,6 @@ void TrieStore::Put(std::string_view key, T value) {
   root_ = tree;  // copy constructor is not guranteed to be ATOMIC!
   root_lock_.unlock();
   write_lock_.unlock();
-
-  
 }
 
 void TrieStore::Remove(std::string_view key) {
